@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Card, message, Spin, Tabs } from 'antd';
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Card, Spin, Tabs } from 'antd';
+import { TabsProps } from 'antd/lib';
+import intl from 'react-intl-universal';
 import { Device } from '../../../types/device';
-import { GetDeviceRequest } from '../../../apis/device';
 import SettingPage from './setting';
 import { DeviceType } from '../../../types/device_type';
 import HasPermission from '../../../permission';
@@ -12,68 +13,24 @@ import useSocket, { SocketTopic } from '../../../socket';
 import { RecentHistory } from '../RecentHistory';
 import DeviceEvent from './event';
 import { CommandDropdown } from '../commandDropdown';
-import { isNumber } from 'lodash';
 import { PageTitle } from '../../../components/pageTitle';
-import intl from 'react-intl-universal';
-import { useDevicesContext } from '..';
-import { TabsProps } from 'antd/lib';
 import { SingleDeviceStatus } from '../SingleDeviceStatus';
 import InformationCard from './information';
 import TopologyView from '../../network/detail/topologyView';
-import { Network } from '../../../types/network';
-import { GetNetworkRequest } from '../../../apis/network';
 import { RuntimeChart } from '../RuntimeChart';
-import { VIRTUAL_ROOT_DEVICE } from '../../../constants';
-import NetworkPage from '../../network';
+import { useContext } from '..';
 
 const DeviceDetailPage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
   const location = useLocation();
   const { PubSub } = useSocket();
-  const [device, setDevice] = useState<Device>();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [network, setNetwork] = useState<Network>();
+  const { device, network, loading, refresh } = useContext();
   const tabs = useDeviceTabs(device?.typeId);
-  const { setToken } = useDevicesContext();
-
-  const fetchDevice = useCallback(() => {
-    if (id && isNumber(Number(id))) {
-      if (Number(id) !== VIRTUAL_ROOT_DEVICE.id) {
-        setIsLoading(true);
-        GetDeviceRequest(Number(id))
-          .then((data) => {
-            setDevice(data);
-            if (DeviceType.isGateway(data.typeId)) {
-              if (data.network?.id) {
-                GetNetworkRequest(data.network?.id)
-                  .then((data) => {
-                    setNetwork(data);
-                  })
-                  .catch((_) => {
-                    navigate('/devices');
-                  });
-              }
-            }
-            setIsLoading(false);
-          })
-          .catch((_) => navigate('/devices'));
-      }
-    } else {
-      message.error(intl.get('DEVICE_DOES_NOT_EXIST')).then();
-      navigate('/devices');
-    }
-  }, [id, navigate]);
-
-  useEffect(() => {
-    fetchDevice();
-  }, [fetchDevice]);
 
   useEffect(() => {
     if (device) {
       PubSub.subscribe(SocketTopic.connectionState, (msg: any, state: any) => {
         if (device.macAddress === state.macAddress) {
-          setDevice({ ...device, state: { ...device.state, isOnline: state.isOnline } });
+          // setDevice({ ...device, state: { ...device.state, isOnline: state.isOnline } });
         }
       });
     }
@@ -84,7 +41,7 @@ const DeviceDetailPage = () => {
   }, [device, PubSub]);
 
   function renderOverview(device: Device) {
-    const info = <InformationCard device={device} isLoading={isLoading} />;
+    const info = <InformationCard device={device} isLoading={loading} />;
     let bottom = null;
     const { typeId } = device;
     if (DeviceType.isGateway(typeId) && network) {
@@ -143,27 +100,14 @@ const DeviceDetailPage = () => {
       tabs.push({
         key: 'settings',
         label: intl.get('SETTINGS'),
-        children: device && (
-          <SettingPage
-            device={device}
-            onUpdate={() => {
-              setToken((crt) => crt + 1);
-            }}
-          />
-        )
+        children: device && <SettingPage device={device} onUpdate={refresh} />
       });
     }
     return tabs;
   }
 
-  if (Number(id) === VIRTUAL_ROOT_DEVICE.id) {
-    return <NetworkPage />;
-  }
-  if (isLoading) {
-    return <Spin />;
-  }
   return (
-    <>
+    <Spin spinning={loading}>
       {device && (
         <Card bodyStyle={{ padding: '10px 20px' }}>
           <Tabs
@@ -188,7 +132,7 @@ const DeviceDetailPage = () => {
           />
         </Card>
       )}
-    </>
+    </Spin>
   );
 };
 

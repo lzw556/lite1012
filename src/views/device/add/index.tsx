@@ -16,7 +16,7 @@ import { PageTitle } from '../../../components/pageTitle';
 import intl from 'react-intl-universal';
 import { FormInputItem } from '../../../components/formInputItem';
 import { SelfLink } from '../../../components/selfLink';
-import { useDevicesContext } from '..';
+import { useContext, VIRTUAL_ROOT_DEVICE } from '..';
 
 const AddDevicePage = () => {
   const [deviceSettings, setDeviceSettings] = useState<DeviceSetting[]>();
@@ -25,7 +25,7 @@ const AddDevicePage = () => {
   const [success, setSuccess] = useState<boolean>(false);
   const [form] = Form.useForm();
   const navigate = useNavigate();
-  const devicesContext = useDevicesContext();
+  const devicesContext = useContext();
 
   const fetchDeviceDefaultSettings = (type: any) => {
     setDeviceType(type);
@@ -45,7 +45,7 @@ const AddDevicePage = () => {
         sensors: processArrayValuesInSensorSetting(values.sensors)
       }).then((_) => {
         setSuccess(true);
-        devicesContext.setToken((prev) => prev + 1);
+        devicesContext.refresh(true);
       });
     });
   };
@@ -89,7 +89,7 @@ const AddDevicePage = () => {
     <div style={{ marginTop: 10 }}>
       <PageTitle
         items={[
-          { title: <SelfLink to='/devices/0'>{intl.get('MENU_NETWORK_LIST')}</SelfLink> },
+          { title: <SelfLink to='/devices/0'>{VIRTUAL_ROOT_DEVICE.name}</SelfLink> },
           { title: intl.get('CREATE_DEVICE') }
         ]}
       />

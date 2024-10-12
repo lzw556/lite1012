@@ -1215,5 +1215,10 @@
   "motor.nominal_power": "Nominal Power",
   "motor.mounting": "Mounting",
   "motor.bearing_type": "Bearing Type",
-  "motor.bearing_model": "Bearing Model"
+  "motor.bearing_model": "Bearing Model",
+  "real.time.data": "Real-time Data",
+  "property.group.core": "Core",
+  "property.group.timeDomain": "TimeDomain",
+  "property.group.frequency": "Frequency",
+  "property.group.statistics": "Statistics"
 }

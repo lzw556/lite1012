@@ -15,7 +15,7 @@ import { toMac } from '../../../utils/format';
 import { useLocaleFormLayout } from '../../../hooks/useLocaleFormLayout';
 import { DeviceType } from '../../../types/device_type';
 import { SelfLink } from '../../../components/selfLink';
-import { useDevicesContext } from '../../device';
+import { useContext, VIRTUAL_ROOT_DEVICE } from '../../device';
 
 const { Dragger } = Upload;
 
@@ -34,7 +34,7 @@ const ImportNetworkPage = () => {
   const [networkSettings, setNetworkSettings] = useState<any>();
   const [provisionMode, setProvisionMode, settings] = useProvisionMode(networkSettings);
   const navigate = useNavigate();
-  const devicesContext = useDevicesContext();
+  const devicesContext = useContext();
   const checkJSONFormat = (source: any) => {
     return source.hasOwnProperty('deviceList') && source.hasOwnProperty('wsn');
   };
@@ -96,7 +96,7 @@ const ImportNetworkPage = () => {
         };
         ImportNetworkRequest(req).then((_) => {
           setSuccess(true);
-          devicesContext.setToken((prev) => prev + 1);
+          devicesContext.refresh(true);
         });
       });
     } else {
@@ -222,7 +222,7 @@ const ImportNetworkPage = () => {
     <div style={{ marginTop: 10 }}>
       <PageTitle
         items={[
-          { title: <SelfLink to='/devices/0'>{intl.get('MENU_NETWORK_LIST')}</SelfLink> },
+          { title: <SelfLink to='/devices/0'>{VIRTUAL_ROOT_DEVICE.name}</SelfLink> },
           { title: intl.get('MENU_IMPORT_NETWORK') }
         ]}
         actions={

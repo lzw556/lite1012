@@ -1,9 +1,8 @@
-import { Card, Col, Empty, Row, Select, Space } from 'antd';
+import { Col, Collapse, Empty, Flex, Row, Select } from 'antd';
 import * as React from 'react';
 import dayjs from '../../utils/dayjsUtils';
 import { FindDeviceDataRequest } from '../../apis/device';
 import { Device } from '../../types/device';
-import { isMobile } from '../../utils/deviceDetection';
 import { getDisplayProperties } from './util';
 import { DeviceType } from '../../types/device_type';
 import Label from '../../components/label';
@@ -11,7 +10,8 @@ import intl from 'react-intl-universal';
 import { ChartHeader } from '../../components/charts/chartHeader';
 import { HistoryData } from '../monitoring-point';
 import { PropertyChart, transformHistoryData } from '../../components/charts/propertyChart';
-import { DisplayProperty } from '../../constants/properties';
+import { DisplayProperty, displayPropertyGroup } from '../../constants/properties';
+import { generateColProps } from '../../utils/grid';
 
 export const RecentHistory: React.FC<{ device: Device }> = ({ device }) => {
   const channels = DeviceType.isMultiChannel(device.typeId, true);
@@ -29,28 +29,41 @@ export const RecentHistory: React.FC<{ device: Device }> = ({ device }) => {
 
   const renderDeviceHistoryDataChart = () => {
     if (historyData && historyData.length > 0) {
-      return getDisplayProperties(device.properties, device.typeId).map(
-        (p: DisplayProperty, index: number) => {
-          const transform = transformHistoryData(historyData, p);
-          return (
-            <Card.Grid
-              key={index}
-              style={{ boxShadow: 'none', border: 'none', width: isMobile ? '100%' : '25%' }}
-            >
-              {transform && (
-                <>
-                  <ChartHeader property={p} values={transform.values} />
-                  <PropertyChart
-                    series={transform.series}
-                    withArea={true}
-                    xAxis={{ labelLimit: true }}
-                    yAxis={p}
-                  />
-                </>
-              )}
-            </Card.Grid>
-          );
-        }
+      return (
+        <Collapse
+          defaultActiveKey={displayPropertyGroup[0]}
+          expandIconPosition='end'
+          items={displayPropertyGroup.map((g) => ({
+            key: g,
+            label: intl.get(g),
+            children: (
+              <Row gutter={[32, 32]}>
+                {getDisplayProperties(device.properties, device.typeId)
+                  .filter((p) => p.group === g)
+                  .map((p: DisplayProperty, index: number) => {
+                    const transform = transformHistoryData(historyData, p);
+                    return (
+                      <Col {...generateColProps({ md: 12, lg: 12, xl: 8, xxl: 6 })} key={index}>
+                        {transform && (
+                          <>
+                            <ChartHeader property={p} values={transform.values} />
+                            <PropertyChart
+                              series={transform.series}
+                              withArea={true}
+                              xAxis={{ labelLimit: true }}
+                              yAxis={p}
+                            />
+                          </>
+                        )}
+                      </Col>
+                    );
+                  })}
+              </Row>
+            )
+          }))}
+          size='small'
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.01)' }}
+        />
       );
     }
     return (
@@ -63,32 +76,21 @@ export const RecentHistory: React.FC<{ device: Device }> = ({ device }) => {
   };
 
   return (
-    <Row gutter={[0, 16]}>
-      <Col span={24}>
-        <Card
-          title={
-            channels.length > 0 && (
-              <Space>
-                <Label name={intl.get('CURRENT_CHANNEL')}>
-                  <Select
-                    onChange={(val) => setChannel(val)}
-                    defaultValue={channel}
-                    bordered={false}
-                  >
-                    {channels.map(({ label, value }) => (
-                      <Select.Option value={value} key={value}>
-                        {label}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Label>
-              </Space>
-            )
-          }
-        >
-          {renderDeviceHistoryDataChart()}
-        </Card>
-      </Col>
-    </Row>
+    <>
+      {channels.length > 0 && (
+        <Flex justify='flex-end' style={{ marginBottom: 10 }}>
+          <Label name={intl.get('CURRENT_CHANNEL')}>
+            <Select onChange={(val) => setChannel(val)} defaultValue={channel} bordered={false}>
+              {channels.map(({ label, value }) => (
+                <Select.Option value={value} key={value}>
+                  {label}
+                </Select.Option>
+              ))}
+            </Select>
+          </Label>
+        </Flex>
+      )}
+      {renderDeviceHistoryDataChart()}
+    </>
   );
 };

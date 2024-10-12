@@ -101,3 +101,9 @@ export function getDisplayProperties(properties: Property[], deviceType: DeviceT
       .filter((p) => !!p.fields) as DisplayProperty[];
   }
 }
+
+export const DeviceNS = {
+  Assert: {
+    isRoot: (d: Device) => DeviceType.isRootDevice(d.typeId) && (!d.parent || d.parent.length === 0)
+  }
+};

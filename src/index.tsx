@@ -6,7 +6,7 @@ import reportWebVitals from './reportWebVitals';
 import { StoreContext } from 'redux-react-hook';
 import AppRouter from './routers';
 import { LocaleProvider } from './localeProvider';
-import { AppConfigProvider } from './views/asset/components/appConfigContext';
+import { AppConfigProvider } from './appContext';
 
 ReactDOM.render(
   <StoreContext.Provider value={store}>

@@ -25,3 +25,40 @@ tbody.ant-table-tbody > tr.ant-table-row:hover > td {
 .ant-tabs.ant-tabs-righted .ant-tabs-nav .ant-tabs-nav-wrap {
   justify-content: flex-end;
 }
+
+.alarm-normal {
+  color: #28a745;
+}
+.alarm-info {
+  color: #ffc107;
+}
+.alarm-warn {
+  color: #fe6d2c;
+}
+.alarm-danger {
+  color: #ff0000;
+}
+.alarm-normal-bg {
+  background-color: #28a745;
+}
+.alarm-info-bg {
+  background-color: #ffc107;
+}
+.alarm-warn-bg {
+  background-color: #fe6d2c;
+}
+.alarm-danger-bg {
+  background-color: #ff0000;
+}
+.alarm-normal-fill {
+  fill: #28a745;
+}
+.alarm-info-fill {
+  fill: #ffc107;
+}
+.alarm-warn-fill {
+  fill: #fe6d2c;
+}
+.alarm-danger-fill {
+  fill: #ff0000;
+}
