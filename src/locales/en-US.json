@@ -1220,5 +1220,6 @@
   "property.group.core": "Core",
   "property.group.timeDomain": "TimeDomain",
   "property.group.frequency": "Frequency",
-  "property.group.statistics": "Statistics"
+  "property.group.statistics": "Statistics",
+  "wireless.network.settings": "WSN Settings"
 }

@@ -1,6 +1,16 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Card, Spin, Tabs } from 'antd';
+import {
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  DescriptionsProps,
+  Row,
+  Space,
+  Spin,
+  Statistic
+} from 'antd';
 import { TabsProps } from 'antd/lib';
 import intl from 'react-intl-universal';
 import { Device } from '../../../types/device';
@@ -13,12 +23,17 @@ import useSocket, { SocketTopic } from '../../../socket';
 import { RecentHistory } from '../RecentHistory';
 import DeviceEvent from './event';
 import { CommandDropdown } from '../commandDropdown';
-import { PageTitle } from '../../../components/pageTitle';
 import { SingleDeviceStatus } from '../SingleDeviceStatus';
 import InformationCard from './information';
 import TopologyView from '../../network/detail/topologyView';
 import { RuntimeChart } from '../RuntimeChart';
 import { useContext } from '..';
+import { TabsCard } from '../../../components/tabsCard';
+import { toMac } from '../../../utils/format';
+import dayjs from '../../../utils/dayjsUtils';
+import { SelfLink } from '../../../components/selfLink';
+import Icon, { ExportOutlined, WifiOutlined } from '@ant-design/icons';
+import { ExportNetworkRequest } from '../../../apis/network';
 
 const DeviceDetailPage = () => {
   const location = useLocation();
@@ -39,25 +54,104 @@ const DeviceDetailPage = () => {
       PubSub.unsubscribe(SocketTopic.connectionState);
     };
   }, [device, PubSub]);
-
   function renderOverview(device: Device) {
-    const info = <InformationCard device={device} isLoading={loading} />;
+    let info = null;
     let bottom = null;
-    const { typeId } = device;
+    const { information, macAddress, state, typeId } = device;
     if (DeviceType.isGateway(typeId) && network) {
+      const items: DescriptionsProps['items'] = [
+        {
+          key: 'mac',
+          label: intl.get('MAC_ADDRESS'),
+          children: toMac(macAddress.toUpperCase())
+        },
+        {
+          key: 'type',
+          label: intl.get('TYPE'),
+          children: intl.get(DeviceType.toString(device.typeId))
+        },
+        {
+          key: 'version',
+          label: intl.get('FIRMWARE_VERSION'),
+          children: information.firmware_version ? information.firmware_version : '-'
+        },
+        {
+          key: 'time',
+          label: intl.get('LAST_CONNECTION_TIME'),
+          children: state.connectedAt
+            ? dayjs(state.connectedAt * 1000).format('YYYY-MM-DD HH:mm:ss')
+            : '-'
+        }
+      ];
+      if (information.ip_address) {
+        items.push({
+          key: 'ip',
+          label: intl.get('IP_ADDRESS'),
+          children: (
+            <Space>
+              <SelfLink to={`http://${information.ip_address}`} target={'_blank'}>
+                {information.ip_address}
+              </SelfLink>
+            </Space>
+          )
+        });
+      }
+      items.push({
+        key: 'signal',
+        label: intl.get('MOBILE_SIGNAL_STRENGTH'),
+        children: state.signalLevel ? `${state.signalLevel} dBm` : '-'
+      });
+      if (information.iccid_4g) {
+        items.push({ key: 'nuber', label: intl.get('4G_CARD_NO'), children: information.iccid_4g });
+      }
       bottom = (
-        <Card>
-          <TopologyView network={network} />
-        </Card>
+        <Row>
+          <Col span={16}>
+            <Card style={{ marginRight: 10 }}>
+              <TopologyView network={network} />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Row gutter={[10, 10]}>
+              <Col span={24}>
+                <Card title={intl.get('DEVICE_STATUS')}>
+                  <Row align='middle'>
+                    <Col span={4}>
+                      <Icon
+                        component={() => <WifiOutlined style={{ fontSize: 30 }} />}
+                        width={30}
+                        height={30}
+                      />
+                    </Col>
+                    <Col>
+                      <Statistic
+                        title={intl.get('MOBILE_SIGNAL_STRENGTH')}
+                        value={state.signalLevel ?? '-'}
+                      />
+                    </Col>
+                  </Row>
+                </Card>
+              </Col>
+              <Col span={24}>
+                <Card title={intl.get('BASIC_INFORMATION')}>
+                  <Descriptions column={1} items={items} />
+                </Card>
+              </Col>
+            </Row>
+          </Col>
+        </Row>
       );
-    } else if (DeviceType.isSensor(typeId)) {
-      bottom = <RecentHistory device={device} />;
+    } else {
+      info = <InformationCard device={device} isLoading={loading} />;
+      if (DeviceType.isSensor(typeId)) {
+        bottom = <RecentHistory device={device} />;
+      }
     }
 
     return (
       <>
         {info}
-        {bottom !== null && <div style={{ marginTop: 16 }}>{bottom}</div>}
+        {bottom !== null && <div style={{ marginTop: info !== null ? 16 : 0 }}>{bottom}</div>}
       </>
     );
   }
@@ -100,7 +194,7 @@ const DeviceDetailPage = () => {
       tabs.push({
         key: 'settings',
         label: intl.get('SETTINGS'),
-        children: device && <SettingPage device={device} onUpdate={refresh} />
+        children: device && <SettingPage device={device} onUpdate={refresh} network={network} />
       });
     }
     return tabs;
@@ -109,28 +203,49 @@ const DeviceDetailPage = () => {
   return (
     <Spin spinning={loading}>
       {device && (
-        <Card bodyStyle={{ padding: '10px 20px' }}>
-          <Tabs
-            tabBarExtraContent={{
-              left: (
-                <div style={{ marginRight: 30 }}>
-                  <SingleDeviceStatus alertStates={device.alertStates} state={device.state} />
-                  {device.name}
-                </div>
-              ),
-              right: (
-                <PageTitle
-                  actions={
-                    <HasPermission value={Permission.DeviceCommand}>
-                      <CommandDropdown device={device} initialUpgradeCode={location.state} />
-                    </HasPermission>
-                  }
-                />
-              )
-            }}
-            items={tabs}
-          />
-        </Card>
+        <TabsCard
+          items={tabs}
+          tabBarExtraContent={{
+            left: (
+              <div style={{ marginRight: 30 }}>
+                <SingleDeviceStatus alertStates={device.alertStates} state={device.state} />
+                {device.name}
+              </div>
+            ),
+            right: (
+              <Space style={{ marginLeft: 30 }}>
+                {DeviceType.isGateway(device.typeId) && network && (
+                  <HasPermission value={Permission.NetworkExport}>
+                    <Button
+                      type='primary'
+                      onClick={() => {
+                        ExportNetworkRequest(network.id).then((res) => {
+                          const url = window.URL.createObjectURL(new Blob([res.data]));
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.setAttribute('download', `${network.name}.json`);
+                          document.body.appendChild(link);
+                          link.click();
+                        });
+                      }}
+                    >
+                      {intl.get('EXPORT_NETWORK')}
+                      <ExportOutlined />
+                    </Button>
+                  </HasPermission>
+                )}
+                <HasPermission value={Permission.DeviceCommand}>
+                  <CommandDropdown
+                    device={device}
+                    initialUpgradeCode={location.state}
+                    network={network}
+                  />
+                </HasPermission>
+              </Space>
+            )
+          }}
+          tabsRighted={true}
+        />
       )}
     </Spin>
   );

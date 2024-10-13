@@ -8,7 +8,6 @@ import { Permission } from '../../permission/permission';
 import { SelfLink } from '../../components/selfLink';
 import { DeviceNS } from './util';
 import { generateColProps } from '../../utils/grid';
-import { NameValueGroups } from '../../components/name-values';
 import dayjs from '../../utils/dayjsUtils';
 
 export const Virtual = () => {
@@ -19,30 +18,42 @@ export const Virtual = () => {
       return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />;
     } else {
       return (
-        <Row>
+        <Row gutter={[10, 10]}>
           {devices.filter(DeviceNS.Assert.isRoot).map((d) => {
             const { id, name, state } = d;
             const isOnline = state && state.isOnline;
             const connectedAt = state && state.connectedAt;
+            const count = DeviceNS.Children.getOnlineStatusCount(d, devices);
 
             return (
-              <Col key={id} {...generateColProps({ md: 12, lg: 12, xl: 8, xxl: 6 })}>
+              <Col key={id} {...generateColProps({ md: 12, lg: 12, xl: 6, xxl: 6 })}>
                 <Card size='small'>
                   <Flex justify='space-between'>
                     {name}
                     <Badge
-                      status={isOnline ? 'success' : 'default'}
                       text={isOnline ? intl.get('ONLINE') : intl.get('OFFLINE')}
+                      status={isOnline ? 'success' : 'default'}
+                      size='small'
                     />
                   </Flex>
-                  <Row justify='center' gutter={[50, 50]}>
-                    <Col span={12}>
-                      <Statistic value={10} title={intl.get('ONLINE')} />
-                    </Col>
-                    <Col span={12}>
-                      <Statistic value={10} title={intl.get('OFFLINE')} />
-                    </Col>
-                  </Row>
+                  <div style={{ padding: 20, textAlign: 'center' }}>
+                    <Row justify='center'>
+                      <Col span={8}>
+                        <Statistic
+                          value={count.online}
+                          valueStyle={{ fontSize: 30 }}
+                          title={intl.get('ONLINE')}
+                        />
+                      </Col>
+                      <Col span={8}>
+                        <Statistic
+                          value={count.offline}
+                          valueStyle={{ fontSize: 30 }}
+                          title={intl.get('OFFLINE')}
+                        />
+                      </Col>
+                    </Row>
+                  </div>
                   <Card.Meta
                     description={
                       <Space>

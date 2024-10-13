@@ -1,14 +1,14 @@
 import { MONITORING_POINT } from '../../asset-common';
 import { wind, flange, tower } from '../constants';
 
-const assetHierarchy = {
+const getAssetHierarchy = () => ({
   top: wind,
   children: [flange, tower],
   leaf: { type: 99999, label: MONITORING_POINT }
-};
+});
 
 export function useDescendentTypes(type?: number) {
-  const { children, top, leaf } = assetHierarchy;
+  const { children, top, leaf } = getAssetHierarchy();
   if (!type) {
     return [top, ...children, leaf];
   }
@@ -20,7 +20,7 @@ export function useDescendentTypes(type?: number) {
 }
 
 export function useParentTypes(type?: number) {
-  const { children, top } = assetHierarchy;
+  const { children, top } = getAssetHierarchy();
   if (!type) {
     return children;
   }

@@ -1220,5 +1220,6 @@
   "property.group.core": "关键特征",
   "property.group.timeDomain": "时域特征",
   "property.group.frequency": "频域特征",
-  "property.group.statistics": "统计特征"
+  "property.group.statistics": "统计特征",
+  "wireless.network.settings": "无线网络配置"
 }

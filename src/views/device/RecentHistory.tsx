@@ -25,54 +25,82 @@ export const RecentHistory: React.FC<{ device: Device }> = ({ device }) => {
       dayjs().endOf('day').utc().unix(),
       channels.length > 0 ? { channel } : {}
     ).then(setHistoryData);
-  }, [device, channel, channels.length]);
+  }, [device.id, channel, channels.length]);
 
   const renderDeviceHistoryDataChart = () => {
     if (historyData && historyData.length > 0) {
+      if (DeviceType.isVibration(device.typeId)) {
+        return (
+          <Collapse
+            defaultActiveKey={displayPropertyGroup[0]}
+            expandIconPosition='end'
+            items={displayPropertyGroup.map((g) => ({
+              key: g,
+              label: intl.get(g),
+              children: (
+                <Row gutter={[32, 32]}>
+                  {getDisplayProperties(device.properties, device.typeId)
+                    .filter((p) => p.group === g)
+                    .map((p: DisplayProperty, index: number) => {
+                      const transform = transformHistoryData(historyData, p);
+                      return (
+                        <Col {...generateColProps({ md: 12, lg: 12, xl: 8, xxl: 6 })} key={index}>
+                          {transform && (
+                            <>
+                              <ChartHeader property={p} values={transform.values} />
+                              <PropertyChart
+                                series={transform.series}
+                                withArea={true}
+                                xAxis={{ labelLimit: true }}
+                                yAxis={p}
+                              />
+                            </>
+                          )}
+                        </Col>
+                      );
+                    })}
+                </Row>
+              )
+            }))}
+            size='small'
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.01)' }}
+          />
+        );
+      } else {
+        return (
+          <Row gutter={[32, 32]}>
+            {getDisplayProperties(device.properties, device.typeId).map(
+              (p: DisplayProperty, index: number) => {
+                const transform = transformHistoryData(historyData, p);
+                return (
+                  <Col {...generateColProps({ md: 12, lg: 12, xl: 8, xxl: 6 })} key={index}>
+                    {transform && (
+                      <>
+                        <ChartHeader property={p} values={transform.values} />
+                        <PropertyChart
+                          series={transform.series}
+                          withArea={true}
+                          xAxis={{ labelLimit: true }}
+                          yAxis={p}
+                        />
+                      </>
+                    )}
+                  </Col>
+                );
+              }
+            )}
+          </Row>
+        );
+      }
+    } else {
       return (
-        <Collapse
-          defaultActiveKey={displayPropertyGroup[0]}
-          expandIconPosition='end'
-          items={displayPropertyGroup.map((g) => ({
-            key: g,
-            label: intl.get(g),
-            children: (
-              <Row gutter={[32, 32]}>
-                {getDisplayProperties(device.properties, device.typeId)
-                  .filter((p) => p.group === g)
-                  .map((p: DisplayProperty, index: number) => {
-                    const transform = transformHistoryData(historyData, p);
-                    return (
-                      <Col {...generateColProps({ md: 12, lg: 12, xl: 8, xxl: 6 })} key={index}>
-                        {transform && (
-                          <>
-                            <ChartHeader property={p} values={transform.values} />
-                            <PropertyChart
-                              series={transform.series}
-                              withArea={true}
-                              xAxis={{ labelLimit: true }}
-                              yAxis={p}
-                            />
-                          </>
-                        )}
-                      </Col>
-                    );
-                  })}
-              </Row>
-            )
-          }))}
-          size='small'
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.01)' }}
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={intl.get('NO_DATA_PROMPT')}
+          style={{ height: `400px` }}
         />
       );
     }
-    return (
-      <Empty
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-        description={intl.get('NO_DATA_PROMPT')}
-        style={{ height: `400px` }}
-      />
-    );
   };
 
   return (
